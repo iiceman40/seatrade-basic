@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+
+<head lang="en">
+	<meta charset="UTF-8">
+	<title>SeaTrade</title>
+
+	<link rel="stylesheet" href="css/bootstrap.min.css" >
+	<link rel="stylesheet" href="css/sandstone.min.css" >
+	<link rel="stylesheet" href="css/style.css" >
+
+	<script type="text/javascript" src="js/lib/jquery-2.1.3.min.js"></script>
+	<script type="text/javascript" src="js/lib/bootstrap.min.js"></script>
+	<script type="text/javascript" src="js/lib/knockout-3.3.0.min.js"></script>
+
+	<script type="text/javascript" src="js/configuration/cityNames.js"></script>
+	<script type="text/javascript" src="js/configuration/shipNames.js"></script>
+
+	<script type="text/javascript" src="js/model/Player.js"></script>
+	<script type="text/javascript" src="js/model/City.js"></script>
+	<script type="text/javascript" src="js/model/Troops.js"></script>
+	<script type="text/javascript" src="js/model/Castle.js"></script>
+	<script type="text/javascript" src="js/model/Docks.js"></script>
+	<script type="text/javascript" src="js/model/Farm.js"></script>
+	<script type="text/javascript" src="js/model/Parcel.js"></script>
+	<script type="text/javascript" src="js/model/Storage.js"></script>
+	<script type="text/javascript" src="js/model/Ship.js"></script>
+
+	<script type="text/javascript" src="js/service/test.js"></script>
+	<script type="text/javascript" src="js/service/FarmService.js"></script>
+	<script type="text/javascript" src="js/service/MarketService.js"></script>
+	<script type="text/javascript" src="js/service/ShipService.js"></script>
+	<script type="text/javascript" src="js/service/TroopsService.js"></script>
+
+	<script type="text/javascript" src="js/main.js"></script>
+</head>
+<body data-bind="css: {'on-sea': !me().activeCity()}">
+
+<nav class="navbar navbar-inverse navbar-fixed-top">
+	<div class="container-fluid">
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			<a class="navbar-brand" href="#">SeaTrade</a>
+		</div>
+
+		<div class="nav navbar-text" data-bind="if: me().activeCity()"><span data-bind="text: me().activeCity().name"></span></div>
+
+		<div id="navbar" class="navbar-collapse collapse">
+			<ul class="nav navbar-nav navbar-right">
+				<li><a href="#">Money: <span data-bind="text: me().money"></span> </a></li>
+				<li><a href="#">Profile <span data-bind="text: me().name"></span> </a></li>
+			</ul>
+		</div>
+	</div>
+</nav>
+
+<div class="container-fluid">
+	<div class="row">
+
+		<div class="col-sm-2 sidebar">
+			<!-- ko if: me().activeCity() -->
+			<h2>Areas</h2>
+			<ul class="nav nav-sidebar" data-bind="foreach: areas">
+				<li><a href="#" data-bind="text: label, click: $root.goTo"></a></li>
+			</ul>
+			<hr />
+			<h2>Players</h2>
+			<div data-bind="foreach: players">
+				<div>
+					<span data-bind="text: name"></span>
+					(
+					<!-- ko if: activeCity() -->
+					<span data-bind="text: activeCity().name" class="cap"></span>,
+					<span data-bind="text: activeArea().label" class="cap"></span>
+					<!-- ko if: $data == $root.me() --> - you<!-- /ko -->
+					<!-- /ko -->
+					<!-- ko ifnot: activeCity() -->
+					<span class="cap">traveling</span>
+					<!-- /ko -->
+					)
+				</div>
+			</div>
+			<!-- /ko -->
+		</div>
+
+		<div class="col-sm-10 main">
+			<h2 data-bind="visible: me().activeCity(), text: me().activeArea().label" class="cap"></h2>
+			<h2 data-bind="visible: !me().activeCity()" class="cap">On sea</h2>
+
+
+			<!-- CITY -->
+			<!-- ko if: me().activeCity() && me().activeArea().label == 'city' -->
+			<p>Name and description of city - TODO put that description in the city class.</p>
+			<!-- /ko -->
+
+
+			<!-- FARM -->
+			<!-- ko if: me().activeCity() && me().activeArea().label == 'farm' -->
+			<div class="row">
+				<div class="col-sm-8">
+					<table class="field">
+						<tbody data-bind="foreach: me().activeCity().farm().field">
+						<tr data-bind="foreach: $data">
+							<td data-bind="click: $root.selectParcel, attr: {class: 'parcel ' + type().label}, css: {'storage': storage() != null}, event: { mouseover: showInfo, mouseout: hideInfo}">
+								<div class="parcel-info" data-bind="visible: !infoVisible()">
+									<div data-bind="text: type().label" class="cap"></div>
+									<!-- ko if: owner --><div data-bind="text: owner().name"></div><!-- /ko -->
+									<!-- ko if: storage --><div data-bind="text: storage().label" class="cap"></div><!-- /ko -->
+								</div>
+								<div class="action-info" data-bind="visible: infoVisible">
+									<!-- ko if: !owner() -->Buy parcel?<!-- /ko -->
+									<!-- ko if: owner() == $root.me() -->
+										<!-- ko if: type() != $root.selectedParcelType() -->Plant <span data-bind="text: $root.selectedParcelType().label"></span>?<!-- /ko -->
+										<!-- ko if: type() == $root.selectedParcelType() && !storage() -->Build barn?<!-- /ko -->
+									<!-- ko if: type() == $root.selectedParcelType() && storage() -->Destroy barn?<!-- /ko -->
+									<!-- /ko -->
+								</div>
+							</td>
+						</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="col-sm-4">
+					<h3>Available fam types</h3>
+					<ul data-bind="foreach: availableParcelTypes">
+						<li>
+							<a href="#" data-bind="text: label, click: $root.selectParcelType" class="cap"></a>
+							(Price: <span data-bind="text: $data.price"></span>)
+							<!-- ko if: $root.selectedParcelType() == $data --><span class="glyphicon glyphicon-hand-left"></span><!-- /ko -->
+						</li>
+					</ul>
+					<!-- ko if: me().activeCity().farm().storageParcels().length -->
+					<h3>My barns</h3>
+					<ul data-bind="foreach: me().activeCity().farm().storageParcels()">
+						<li>
+							<span data-bind="text: type().label" class="cap"></span>
+							(<span data-bind="text: storage().content"></span> / <span data-bind="text: storage().capacity"></span>)
+							<!-- ko if: storage().content() >= storage().capacity() -->
+							<span class="text-danger">full</span>
+							<!-- /ko -->
+							<!-- ko if: $root.meOwnsStorageOfThisTypeInThisCity($data.type()) -->
+								<!-- ko if: $root.myStorageOfThisTypeInThisCity($data.type()).isFull() -->
+								<span class="text-danger">Warehouse full</span>
+								<!-- /ko -->
+								<!-- ko if: !$root.myStorageOfThisTypeInThisCity($data.type()).isFull() -->
+								<a href="#" data-bind="click: $root.sendToWarehouse">Send to warehouse</a>
+								<!-- /ko -->
+							<!-- /ko -->
+							<!-- ko if: !$root.meOwnsStorageOfThisTypeInThisCity($data.type()) -->
+							<span class="text-danger">No warehouse</span>
+							<!-- /ko -->
+							<!-- TODO send all to warehouse -->
+						</li>
+					</ul>
+					<!-- /ko -->
+				</div>
+			</div>
+			<!-- /ko -->
+
+
+			<!-- DOCKS -->
+			<!-- ko if: me().activeCity() && me().activeArea().label == 'docks' -->
+			<div class="row">
+				<div class="col-sm-8">
+					<div class="cargo-ships" data-bind="if: me().activeCity().docks().cargoShips().length">
+						<h3>Cargo ships</h3>
+						<div data-bind="foreach: me().activeCity().docks().cargoShips">
+							<!-- ko template: { name: 'ship-template', data: $data } --><!-- /ko -->
+						</div>
+					</div>
+					<div class="war-ships" data-bind="if: me().activeCity().docks().warShips().length">
+						<h3>War ships</h3>
+						<div data-bind="foreach: me().activeCity().docks().warShips">
+							<!-- ko template: { name: 'ship-template', data: $data } --><!-- /ko -->
+						</div>
+					</div>
+				</div>
+				<div class="col-sm-4">
+					<div data-bind="if: $root.myWarehousesInThisCity().length">
+						<h3>My warehouses</h3>
+						<ul data-bind="foreach: $root.myWarehousesInThisCity">
+							<li>
+								<a href="#" data-bind="text: label, click: $root.selectWarehouse" class="cap"></a> (<span data-bind="text: content"></span> / <span data-bind="text: capacity"></span>)
+								<!-- ko if: $root.selectedWarehouse() == $data --><span class="glyphicon glyphicon-hand-left"></span><!-- /ko -->
+							</li>
+						</ul>
+					</div>
+					<div>
+						<label for="amountToLoad">Amount to load/unload:</label> <input id="amountToLoad" type="number" min="1" data-bind="value: me().activeCity().docks().amountToLoad" />
+					</div>
+					<div data-bind="if: availableWarehouseTypesInThisCity().length && $root.me().activeCity()">
+						<h3>Buy a warehouse</h3>
+						<ul data-bind="foreach: availableWarehouseTypesInThisCity">
+							<li>
+								<a href="#" data-bind="text: label, click: $root.buyWarehouse" class="cap"></a> (Buy for <span data-bind="text: $root.me().activeCity().docks().warehousePrice"></span>)
+							</li>
+						</ul>
+					</div>
+					<h3>Buy a ship</h3>
+					<ul data-bind="foreach: availableShipTypes">
+						<li><a href="#" data-bind="text: label, click: $root.buyShip" class="cap"></a> (<span data-bind="text: price"></span>) </li>
+					</ul>
+					<h3>Set sail with selected ships</h3>
+					<ul data-bind="foreach: $root.cities">
+						<li data-bind="visible: $data != $root.me().activeCity()"><a href="#" data-bind="text: name, click: $root.travelToCityWithSelectedShips"></a></li>
+					</ul>
+				</div>
+			</div>
+			<!-- /ko -->
+
+
+			<!-- CASTLE -->
+			<!-- ko if: me().activeCity() && me().activeArea().label == 'castle' -->
+			<label for="amountOfTroopsToTransfer">Amount to transfer:</label> <input id="amountOfTroopsToTransfer" type="number" min="1" data-bind="value: me().activeCity().castle().amountOfTroopsToTransfer" />
+			<!-- ko if: me().activeCity().castle().owner() == me() -->
+			<h3>Troops in castle</h3>
+			<div data-bind="foreach: $root.availableTroopTypes">
+				<div>
+					<span data-bind="text: $root.me().activeCity().castle().troops()[$data.label]().type().label" class="cap"></span>:
+					<span data-bind="text: $root.me().activeCity().castle().troops()[$data.label]().amount" class="cap"></span>
+					<a href="#" data-bind="click: $root.transferTroopsToCamp" class="cap">transfer to camp</a>
+				</div>
+			</div>
+			<!-- /ko -->
+			<h3>Troops in camp</h3>
+			<div data-bind="foreach: $root.availableTroopTypes">
+				<div>
+					<span data-bind="text: $root.me().activeCity().camp()[$data.label]().type().label" class="cap"></span>:
+					<span data-bind="text: $root.me().activeCity().camp()[$data.label]().amount" class="cap"></span>
+					<a href="#" data-bind="click: $root.transferTroopsToCastle" class="cap">transfer to castle</a>
+				</div>
+			</div>
+
+			<h3>Battle</h3>
+			<!-- TODO write function for starting a battle -->
+			<button class="btn btn-danger">Start battle!</button>
+			<div class="row">
+				<div class="col-sm-6">
+					<h4>Attacker</h4>
+					<div data-bind="foreach: $root.availableTroopTypes">
+						<!-- TODO put in template -->
+						<div>
+							<span data-bind="text: $root.me().activeCity().camp()[$data.label]().type().label" class="cap"></span>:
+							<span data-bind="text: $root.me().activeCity().camp()[$data.label]().amount" class="cap"></span>
+							<div class="progress">
+								<div class="progress-bar" role="progressbar" data-bind="style: {width: $root.me().activeCity().camp()[$data.label]().percentageLeft()+'%'}"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-sm-6">
+					<h4>Defender</h4>
+					<div data-bind="foreach: $root.availableTroopTypes">
+						<div>
+							<span data-bind="text: $root.me().activeCity().castle().troops()[$data.label]().type().label" class="cap"></span>:
+							<span data-bind="text: $root.me().activeCity().castle().troops()[$data.label]().amount" class="cap"></span>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /ko -->
+
+
+			<!-- MARKET -->
+			<!-- ko if: me().activeCity() && me().activeArea().label == 'market' -->
+			<div data-bind="if: $root.myWarehousesInThisCity().length">
+				<h3>Sell from my warehouse</h3>
+				<label for="marketAmount">Amount to sell:</label> <input id="marketAmount" type="number" min="1" data-bind="value: me().activeCity().marketAmount" />
+				<ul data-bind="foreach: $root.myWarehousesInThisCity">
+					<li>
+						<span data-bind="text: label" class="cap"></span>
+						(<span data-bind="text: content"></span> / <span data-bind="text: capacity"></span>)
+						Sell at <span data-bind="text: $root.currentPriceInThisCity($data.type())"></span>
+						<!-- ko if: $root.me().activeCity().marketAmount() <= $data.content() -->
+						<a href="#" data-bind="click: $root.sellSomeFromWarehouse"><span data-bind="text: $root.me().activeCity().marketAmount"></span> (for <span data-bind="text: $root.tradeValueSome($data)"></span>)</a>
+						<!-- /ko -->
+						<!-- ko if: $data.content() -->
+						<a href="#" data-bind="click: $root.sellAllFromWarehouse">All (for <span data-bind="text: $root.tradeValueAll($data)"></span>)</a>
+						<!-- /ko -->
+					</li>
+				</ul>
+			</div>
+			<h3>Hire troops</h3>
+			<label for="marketAmountTroops">Amount to buy:</label> <input id="marketAmountTroops" type="number" min="1" data-bind="value: me().activeCity().marketAmountTroops" />
+			<ul data-bind="foreach: availableTroopTypes">
+				<li>
+					<a href="#" data-bind="text: label, click: $root.buyTroops" class="cap"></a>
+					for <span data-bind="text: price() * $root.me().activeCity().marketAmountTroops()"></span>
+					(<span data-bind="text: price"></span> each)
+					-
+					you have <span data-bind="text: $root.amountInCampInThisCity($data)"></span> (camp) and <span data-bind="text: $root.amountInCastleInThisCity($data)"></span> (castle) in this city
+				</li>
+			</ul>
+			<!-- /ko -->
+
+
+			<!-- ON SEA -->
+			<!-- ko ifnot: me().activeCity() -->
+			ON SEA
+			<div data-bind="text: eta"></div>
+			<!-- /ko -->
+
+		</div>
+
+	</div>
+</div>
+
+
+<script type="text/html" id="ship-template">
+	<div class="ship panel panel-info">
+		<div class="panel-heading">
+			<h5>
+				<span data-bind="text: name"></span>
+				<!-- ko if: contentSum() < $data.type().capacity -->
+				<span data-bind="click: $root.loadCargoOnShip" title="Load ship" class="glyphicon glyphicon-log-in force-pointer"></span>
+				<!-- /ko -->
+				<!-- ko if: contentSum() > 0 -->
+				<span data-bind="click: $root.unloadCargoFromShip" title="Unload ship" class="glyphicon glyphicon-log-out force-pointer"></span>
+				<!-- /ko -->
+				<span data-bind="style: {opacity: selectedForTraveling() ? 1 : 0.5}, click: toggleSelectForTraveling" class="glyphicon glyphicon-ok-circle force-pointer" title="Toggle for traveling"></span>
+			</h5>
+		</div>
+		<div class="panel-body">
+			<div class="cap" data-bind="text: type().label"></div>
+			<div><span data-bind="text: type().contentType" class="cap"></span>-ship</div>
+			<div data-bind="foreach: cargoAsArray">
+				<div data-bind="if: amount != 0"><span data-bind="text: label" class="cap"></span>: <span data-bind="text: amount"></span></div>
+			</div>
+			<div>(<span data-bind="text: contentSum()"></span> / <span data-bind="text: type().capacity"></span>)</div>
+			<div class="progress">
+				<div class="progress-bar" role="progressbar" data-bind="style: {width: contentPercentage()+'%'}"></div>
+			</div>
+		</div>
+	</div>
+</script>
+</body>
+</html>

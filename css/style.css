@@ -1,0 +1,69 @@
+body {
+	padding-top: 70px;
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.cap {
+	text-transform: capitalize;
+}
+
+.force-pointer {
+	cursor: pointer;
+}
+
+table.field {
+	border-collapse: separate;
+	border-spacing: 5px;
+}
+
+.parcel {
+	width: 5em;
+	height: 5em;
+	text-align: center;
+	cursor: pointer;
+}
+
+.parcel.storage {
+	border: 2px solid black;
+}
+
+.parcel.empty {
+	background: #f7e1b5;
+	color:  #66512c;
+}
+
+.parcel.wheat {
+	background: #FDC25C;
+	color: #853F03;
+}
+
+.parcel.grapes {
+	background: #990099;
+	color: #440044;
+}
+
+.parcel.bananas {
+	background: #ffdd22;
+	color: #666600;
+}
+
+.ship {
+	display: inline-block;
+	min-width: 15em;
+}
+
+.on-sea .navbar {
+	background: #29ABE0;
+	border-color: #bce8f1;
+	color: #bce8f1;
+}
+
+.on-sea .navbar a,
+.on-sea .navbar-inverse .navbar-nav > li > a{
+	color: #204d74;
+}
